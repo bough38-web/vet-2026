@@ -166,6 +166,31 @@ div.row-widget.stRadio > div > label:hover {
     background: #f1f5f9;
 }
 
+/* V4: Card Hover 3D Effect */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.15) !important;
+    border-color: #cbd5e0;
+}
+
+/* Compact Delete Button for Photos */
+.photo-delete-btn button {
+    background-color: #ef4444 !important;
+    color: white !important;
+    border-radius: 20px !important;
+    padding: 2px 8px !important;
+    font-size: 0.8rem !important;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4) !important;
+    min-height: 0 !important;
+}
+.photo-delete-btn button:hover {
+    background-color: #dc2626 !important;
+}
+
 /* NavBar Customization (To simulate mobile nav) */
 .nav-bar-custom {
     background: linear-gradient(135deg, #0f172a 0%, #1a237e 100%);

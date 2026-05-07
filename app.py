@@ -82,18 +82,17 @@ def load_all_inspections():
             with open(os.path.join(DATA_DIR, f), "r", encoding="utf-8") as file:
                 try:
                     record = json.load(file)
-                    record["_filename"] = f # 내부 식별용
+                    record["_filename"] = f
                     data.append(record)
                 except:
                     pass
     return data
 
-def save_uploaded_image(uploaded_file, prefix="img"):
-    ext = uploaded_file.name.split(".")[-1] if "." in uploaded_file.name else "jpg"
-    filename = f"{prefix}_{uuid.uuid4().hex[:8]}.{ext}"
+def save_image_bytes(img_bytes, filename_prefix="img", ext="jpg"):
+    filename = f"{filename_prefix}_{uuid.uuid4().hex[:8]}.{ext}"
     filepath = os.path.join(IMAGE_DIR, filename)
     with open(filepath, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+        f.write(img_bytes)
     return filepath
 
 # ==========================================
@@ -110,6 +109,10 @@ with st.sidebar:
 # PAGE 1: USER INSPECTION FORM
 # ==========================================
 if page == "📋 현장 점검 입력":
+    # 5.1 Initialize States
+    if "temp_photos" not in st.session_state:
+        st.session_state["temp_photos"] = {} # dict of id -> {"name": ..., "bytes": ...}
+
     for category, items in CHECK_ITEMS.items():
         for item in items:
             if item["id"] not in st.session_state:
@@ -145,57 +148,92 @@ if page == "📋 현장 점검 입력":
             branch = st.selectbox("방문 지사", options=BRANCHES)
         mileage = st.number_input("누적 주행거리 (km)", value=0, step=1)
 
+    # 5.2 Responsive Grid Checklist (2단 배치)
     for category, items in CHECK_ITEMS.items():
         st.markdown(f"### 🛠️ {category}")
-        with st.container(border=True):
-            for item in items:
-                col_text, col_btn = st.columns([3, 1])
-                with col_text:
-                    st.markdown(f"<div class='check-row-container'><div style='font-weight:700; font-size:1.1rem;'>{item['title']}</div><div style='font-size:0.9rem; color:#64748b;'>{item['desc']}</div></div>", unsafe_allow_html=True)
-                with col_btn:
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    if st.button("🔍 상세점검내역", key=f"btn_{item['id']}", use_container_width=True):
-                        show_inspection_details(item["title"], item["detail"])
-                st.radio("상태", ["정상", "불량"], key=item["id"], horizontal=True, label_visibility="collapsed")
-                st.markdown("<hr style='border:none; border-top:1px dashed #e2e8f0;'>", unsafe_allow_html=True)
+        grid_cols = st.columns(2) # 2단 배치
+        for idx, item in enumerate(items):
+            with grid_cols[idx % 2]:
+                with st.container(border=True):
+                    col_text, col_btn = st.columns([3, 1])
+                    with col_text:
+                        st.markdown(f"<div class='check-row-container'><div style='font-weight:700; font-size:1.1rem;'>{item['title']}</div><div style='font-size:0.9rem; color:#64748b;'>{item['desc']}</div></div>", unsafe_allow_html=True)
+                    with col_btn:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        if st.button("🔍 상세점검내역", key=f"btn_{item['id']}", use_container_width=True):
+                            show_inspection_details(item["title"], item["detail"])
+                    st.radio("상태", ["정상", "불량"], key=item["id"], horizontal=True, label_visibility="collapsed")
 
+    # 5.3 Photo Capture & Temp Storage
     with st.container(border=True):
         st.markdown("### 📸 현장 증빙 사진 (최대 10장)")
-        st.info("카메라 촬영 및 파일 업로드 합산 최대 10장까지 등록 가능합니다.")
+        st.info("카메라 촬영이나 파일 업로드 시 임시 갤러리에 계속 누적됩니다. 잘못 찍은 사진은 [X 삭제] 버튼으로 지울 수 있습니다.")
+        
         cam_col, up_col = st.columns(2)
         with cam_col:
             cam_photo = st.camera_input("실시간 촬영", label_visibility="collapsed")
+            if cam_photo:
+                # 고유 해시 대신 name/size 조합으로 id 생성 (Streamlit 호환성)
+                fid = f"{cam_photo.name}_{cam_photo.size}"
+                if fid not in st.session_state["temp_photos"]:
+                    if len(st.session_state["temp_photos"]) >= 10:
+                        st.error("⚠️ 사진은 최대 10장까지만 업로드 가능합니다.")
+                    else:
+                        st.session_state["temp_photos"][fid] = {"name": cam_photo.name, "bytes": cam_photo.getvalue()}
+                        st.rerun()
+
         with up_col:
-            uploaded_files = st.file_uploader("파일 업로드", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'])
+            uploaded_files = st.file_uploader("파일 업로드", accept_multiple_files=True, type=['png', 'jpg', 'jpeg'], key="uploader")
+            if uploaded_files:
+                added = False
+                for f in uploaded_files:
+                    fid = f"{f.name}_{f.size}"
+                    if fid not in st.session_state["temp_photos"]:
+                        if len(st.session_state["temp_photos"]) >= 10:
+                            st.error("⚠️ 더 이상 추가할 수 없습니다. (최대 10장)")
+                            break
+                        else:
+                            st.session_state["temp_photos"][fid] = {"name": f.name, "bytes": f.getvalue()}
+                            added = True
+                if added:
+                    st.rerun()
 
-        all_photos = []
-        if cam_photo:
-            all_photos.append(cam_photo)
-        if uploaded_files:
-            all_photos.extend(uploaded_files)
-
-        if len(all_photos) > 10:
-            st.error(f"⚠️ 사진은 최대 10장까지만 업로드 가능합니다. (현재 {len(all_photos)}장)")
-        elif all_photos:
-            st.markdown("#### 미리보기")
-            cols = st.columns(5)
-            for idx, p in enumerate(all_photos):
-                cols[idx % 5].image(p, use_container_width=True)
+        if st.session_state["temp_photos"]:
+            st.markdown("#### 📥 임시 갤러리 (제출 시 최종 저장)")
+            st.progress(len(st.session_state["temp_photos"]) / 10, text=f"{len(st.session_state['temp_photos'])} / 10 장 임시저장됨")
+            
+            p_cols = st.columns(5)
+            keys_to_delete = []
+            
+            for idx, (fid, pdata) in enumerate(st.session_state["temp_photos"].items()):
+                with p_cols[idx % 5]:
+                    st.image(pdata["bytes"], use_container_width=True)
+                    st.markdown("<div class='photo-delete-btn'>", unsafe_allow_html=True)
+                    if st.button("❌ 삭제", key=f"del_{fid}", use_container_width=True):
+                        keys_to_delete.append(fid)
+                    st.markdown("</div>", unsafe_allow_html=True)
+            
+            if keys_to_delete:
+                for k in keys_to_delete:
+                    del st.session_state["temp_photos"][k]
+                st.rerun()
 
     with st.container(border=True):
         st.markdown("### 📝 종합 의견")
         memo = st.text_area("특이사항 기록", placeholder="차량 외관 스크래치 등 특이사항을 입력해주세요.", height=100)
 
+    # 5.4 Submit
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 점검 완료 및 데이터 전송", use_container_width=True, type="primary"):
         if not car_num or not car_num.strip():
             st.error("⚠️ 차량 번호를 정확히 입력해주세요.")
-        elif len(all_photos) > 10:
+        elif len(st.session_state["temp_photos"]) > 10:
             st.error("⚠️ 사진 개수를 10장 이하로 줄여주세요.")
         else:
             saved_image_paths = []
-            for idx, p in enumerate(all_photos):
-                saved_path = save_uploaded_image(p, prefix=f"{car_num}_img")
+            for fid, pdata in st.session_state["temp_photos"].items():
+                ext = pdata["name"].split(".")[-1] if "." in pdata["name"] else "jpg"
+                saved_path = save_image_bytes(pdata["bytes"], prefix=f"{car_num}_img", ext=ext)
                 saved_image_paths.append(saved_path)
 
             report_data = {
@@ -218,7 +256,13 @@ if page == "📋 현장 점검 입력":
             with open(save_path, "w", encoding="utf-8") as f:
                 json.dump(report_data, f, ensure_ascii=False, indent=4)
                 
-            st.success(f"✅ {car_num} 점검 데이터 및 사진({len(saved_image_paths)}장)이 성공적으로 저장되었습니다!")
+            # 제출 후 임시 상태 초기화
+            st.session_state["temp_photos"].clear()
+            for cat, items in CHECK_ITEMS.items():
+                for it in items:
+                    st.session_state[it["id"]] = "정상"
+                    
+            st.success(f"✅ {car_num} 점검 데이터 및 사진({len(saved_image_paths)}장)이 성공적으로 최종 저장되었습니다!")
             st.balloons()
 
 
@@ -251,15 +295,13 @@ elif page == "📊 관리자 대시보드":
             st.warning("아직 등록된 점검 데이터가 없습니다.")
         else:
             df = pd.DataFrame(inspections)
-            # 불필요한 내부 속성 감추기 및 컬럼 재배치
             df["삭제 선택"] = False
             cols_to_show = ["삭제 선택", "timestamp", "branch", "car_num", "ng_count", "memo", "_filename", "images"]
             
-            # V2 이하 과거 데이터 호환성을 위해 없는 컬럼 안전하게 추가
+            # 하위 호환성 (과거 V2 데이터에 images 컬럼이 없을 경우)
             for col in cols_to_show:
                 if col not in df.columns:
                     df[col] = None
-
             
             st.markdown("### 🗑️ 점검 내역 관리 및 삭제")
             st.info("삭제할 항목을 체크한 뒤 아래 버튼을 누르면 영구 삭제됩니다. (관련된 사진 파일도 함께 삭제됩니다.)")
@@ -269,8 +311,8 @@ elif page == "📊 관리자 대시보드":
                 hide_index=True,
                 column_config={
                     "삭제 선택": st.column_config.CheckboxColumn("삭제 선택", default=False),
-                    "_filename": None, # 화면에 표시 안 함
-                    "images": None # 화면에 텍스트 리스트 표시 안 함
+                    "_filename": None, 
+                    "images": None 
                 },
                 disabled=["timestamp", "branch", "car_num", "ng_count", "memo"]
             )
@@ -279,17 +321,15 @@ elif page == "📊 관리자 대시보드":
                 to_delete = edited_df[edited_df["삭제 선택"] == True]
                 if len(to_delete) > 0:
                     for _, row in to_delete.iterrows():
-                        # 1. 사진 삭제
                         imgs = row.get("images", [])
                         if isinstance(imgs, list):
                             for img_path in imgs:
-                                if os.path.exists(img_path):
+                                if img_path and os.path.exists(img_path):
                                     os.remove(img_path)
-                        # 2. JSON 삭제
                         json_path = os.path.join(DATA_DIR, row["_filename"])
                         if os.path.exists(json_path):
                             os.remove(json_path)
-                    st.success(f"✅ {len(to_delete)}건의 데이터가 삭제되었습니다.")
+                    st.success(f"✅ {len(to_delete)}건의 데이터가 영구 삭제되었습니다.")
                     st.rerun()
                 else:
                     st.warning("삭제할 항목을 체크해주세요.")
@@ -305,14 +345,11 @@ elif page == "📊 관리자 대시보드":
                     ws = wb.active
                     ws.title = "점검 보고서"
                     
-                    # 1. Header 설정
                     headers = ["점검일시", "지사", "차량번호", "불량건수", "특이사항"]
-                    # 기본 점검 항목 타이틀 추가
                     for cat, items in CHECK_ITEMS.items():
                         for it in items:
                             headers.append(it["title"])
                     
-                    # 사진 컬럼 10개 추가
                     for i in range(1, 11):
                         headers.append(f"사진 {i}")
                     
@@ -326,15 +363,12 @@ elif page == "📊 관리자 대시보드":
                         cell.font = header_font
                         cell.alignment = Alignment(horizontal="center", vertical="center")
                         
-                        # 열 너비 설정
                         if "사진" in header:
-                            ws.column_dimensions[get_column_letter(col_num)].width = 28 # 넓게
+                            ws.column_dimensions[get_column_letter(col_num)].width = 28
                         else:
                             ws.column_dimensions[get_column_letter(col_num)].width = 15
 
-                    # 2. Data Writing
                     for r_idx, row_data in enumerate(inspections, start=2):
-                        # 텍스트 데이터
                         base_data = [
                             row_data.get("timestamp", ""),
                             row_data.get("branch", ""),
@@ -350,40 +384,30 @@ elif page == "📊 관리자 대시보드":
                             cell = ws.cell(row=r_idx, column=c_idx, value=val)
                             cell.alignment = Alignment(vertical="center")
                         
-                        # 사진 렌더링 로직
-                        ws.row_dimensions[r_idx].height = 130 # 높이 약 170px 설정 (5x4 비율 맞춤)
+                        ws.row_dimensions[r_idx].height = 130 
                         
                         imgs = row_data.get("images", [])
                         if isinstance(imgs, list):
                             for img_idx, img_path in enumerate(imgs[:10]):
-                                if os.path.exists(img_path):
+                                if img_path and os.path.exists(img_path):
                                     try:
-                                        # Pillow로 이미지 읽고 리사이징 (200x160 - 5:4 비율)
                                         with PILImage.open(img_path) as img:
-                                            # 고해상도 리사이징 (LANCZOS)
+                                            # 고해상도 리사이징 (LANCZOS, 5:4 비율)
                                             img_resized = img.resize((180, 144), PILImage.Resampling.LANCZOS)
-                                            # 임시 버퍼에 저장
                                             img_io = io.BytesIO()
                                             img_resized.save(img_io, format="JPEG")
                                             img_io.seek(0)
                                             
-                                            # 엑셀 삽입용 객체 생성
                                             xl_img = OpenpyxlImage(img_io)
-                                            
-                                            # 위치 결정 (데이터 컬럼 끝난 후 우측)
                                             img_col = len(base_data) + img_idx + 1
                                             col_letter = get_column_letter(img_col)
                                             xl_img.anchor = f"{col_letter}{r_idx}"
-                                            
-                                            # 약간의 오프셋을 주어 셀 가운데 오게 보이도록
                                             xl_img.width = 180
                                             xl_img.height = 144
-                                            
                                             ws.add_image(xl_img)
                                     except Exception as e:
                                         pass
                     
-                    # 3. Buffer 저장
                     output = io.BytesIO()
                     wb.save(output)
                     excel_data = output.getvalue()
