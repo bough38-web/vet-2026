@@ -258,10 +258,8 @@ if page == "📋 현장 점검 입력":
                 
             # 제출 후 임시 상태 초기화
             st.session_state["temp_photos"].clear()
-            for cat, items in CHECK_ITEMS.items():
-                for it in items:
-                    st.session_state[it["id"]] = "정상"
-                    
+            
+
             st.success(f"✅ {car_num} 점검 데이터 및 사진({len(saved_image_paths)}장)이 성공적으로 최종 저장되었습니다!")
             st.balloons()
 
