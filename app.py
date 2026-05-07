@@ -288,6 +288,42 @@ elif page == "📊 관리자 대시보드":
             
         st.divider()
         
+        # 차량 DB 관리 패널
+        with st.expander("🛠️ 차량 번호 관리 (단일 등록 및 일괄 업로드)"):
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("#### 단일 차량 등록")
+                new_car = st.text_input("새로운 차량 번호 입력 (예: 123가4567)")
+                if st.button("추가하기"):
+                    if new_car:
+                        db_path = os.path.join(DB_DIR, "vehicles.csv")
+                        if os.path.exists(db_path):
+                            df_db = pd.read_csv(db_path)
+                            if new_car not in df_db["차량번호"].values:
+                                df_db.loc[len(df_db)] = [new_car]
+                                df_db.to_csv(db_path, index=False)
+                                st.success(f"✅ {new_car} 차량이 추가되었습니다.")
+                            else:
+                                st.warning("이미 존재하는 차량입니다.")
+                        else:
+                            pd.DataFrame({"차량번호": [new_car]}).to_csv(db_path, index=False)
+                            st.success(f"✅ {new_car} 차량이 추가되었습니다.")
+            with c2:
+                st.markdown("#### 엑셀/CSV 일괄 업로드")
+                db_file = st.file_uploader("단일 '차량번호' 컬럼을 가진 파일 선택", type=['csv', 'xlsx'])
+                if db_file:
+                    try:
+                        df_db = pd.read_csv(db_file) if db_file.name.endswith('.csv') else pd.read_excel(db_file)
+                        if "차량번호" in df_db.columns:
+                            df_db[["차량번호"]].to_csv(os.path.join(DB_DIR, "vehicles.csv"), index=False)
+                            st.success(f"✅ 차량 DB가 업데이트 되었습니다. (총 {len(df_db)}대)")
+                        else:
+                            st.error("파일에 '차량번호' 컬럼이 없습니다.")
+                    except Exception as e:
+                        st.error(f"오류 발생: {e}")
+                        
+        st.divider()
+        
         inspections = load_all_inspections()
         if not inspections:
             st.warning("아직 등록된 점검 데이터가 없습니다.")
