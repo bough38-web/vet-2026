@@ -138,12 +138,11 @@ if page == "📋 현장 점검 입력":
         c1, c2 = st.columns([2, 1])
         with c1:
             vehicle_list = get_vehicle_db()
-            vehicle_list.insert(0, "기타 (직접입력)")
-            selected_vehicle = st.selectbox("차량 번호", options=vehicle_list)
-            if selected_vehicle == "기타 (직접입력)":
-                car_num = st.text_input("차량 번호 입력", placeholder="예: 123가4567")
+            if not vehicle_list:
+                st.warning("⚠️ 등록된 차량이 없습니다. 관리자 탭에서 먼저 차량을 등록해주세요.")
+                car_num = None
             else:
-                car_num = selected_vehicle
+                car_num = st.selectbox("차량 번호 선택", options=vehicle_list)
         with c2:
             branch = st.selectbox("방문 지사", options=BRANCHES)
         mileage = st.number_input("누적 주행거리 (km)", value=0, step=1)
