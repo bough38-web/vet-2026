@@ -233,7 +233,7 @@ if page == "📋 현장 점검 입력":
             saved_image_paths = []
             for fid, pdata in st.session_state["temp_photos"].items():
                 ext = pdata["name"].split(".")[-1] if "." in pdata["name"] else "jpg"
-                saved_path = save_image_bytes(pdata["bytes"], prefix=f"{car_num}_img", ext=ext)
+                saved_path = save_image_bytes(pdata["bytes"], filename_prefix=f"{car_num}_img", ext=ext)
                 saved_image_paths.append(saved_path)
 
             report_data = {
@@ -275,9 +275,9 @@ elif page == "📊 관리자 대시보드":
         st.session_state["admin_auth"] = False
         
     if not st.session_state["admin_auth"]:
-        pwd = st.text_input("관리자 비밀번호를 입력하세요 (데모: admin1234)", type="password")
+        pwd = st.text_input("관리자 비밀번호를 입력하세요 (데모: admin1234!!)", type="password")
         if st.button("로그인"):
-            if pwd == "admin1234":
+            if pwd == "admin1234!!":
                 st.session_state["admin_auth"] = True
                 st.rerun()
             else:
