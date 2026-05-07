@@ -116,27 +116,26 @@ with st.sidebar:
 if page == "📋 현장 점검 입력":
     # 5.1 Initialize States
     if "temp_photos" not in st.session_state:
-        st.session_state["temp_photos"] = {} # dict of id -> {"name": ..., "bytes": ...}
+        st.session_state["temp_photos"] = {}
 
     for category, items in CHECK_ITEMS.items():
         for item in items:
             if item["id"] not in st.session_state:
                 st.session_state[item["id"]] = "정상"
 
-    ok_count, ng_count = 0, 0
-    for cat, items in CHECK_ITEMS.items():
-        for it in items:
-            if st.session_state.get(it["id"], "정상") == "정상": ok_count += 1
-            else: ng_count += 1
-    total_count = ok_count + ng_count
-
     today_str = datetime.now().strftime("%Y-%m-%d %H:%M")
     st.markdown(f"<div class='nav-bar-custom'><h1>현장 점검 시스템 (본부 지사 통합)</h1><span>{today_str}</span></div>", unsafe_allow_html=True)
 
+    # 전역 대시보드 지표 (전체 누적 데이터 기반)
+    inspections = load_all_inspections()
+    total_vehicles = len(inspections)
+    ng_vehicles = sum(1 for d in inspections if d.get("ng_count", 0) > 0)
+    ok_vehicles = total_vehicles - ng_vehicles
+
     m1, m2, m3 = st.columns(3)
-    m1.metric("전체 점검 항목", f"{total_count}건")
-    m2.metric("정비대상 (불량)", f"{ng_count}건", "-조치필요" if ng_count > 0 else None, delta_color="inverse")
-    m3.metric("정상기동", f"{ok_count}건", "양호" if ok_count == total_count else None)
+    m1.metric("총 점검 완료 차량", f"{total_vehicles}대")
+    m2.metric("정비 필요 (불량)", f"{ng_vehicles}대", f"-조치 요망" if ng_vehicles > 0 else None, delta_color="inverse")
+    m3.metric("상태 양호", f"{ok_vehicles}대", "전원 양호" if ok_vehicles == total_vehicles and total_vehicles > 0 else None)
 
     with st.container(border=True):
         st.markdown("### 📋 현장 기본 정보")
@@ -238,11 +237,19 @@ if page == "📋 현장 점검 입력":
     # 5.4 Submit
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 점검 완료 및 데이터 전송", use_container_width=True, type="primary"):
-        if not car_num or not car_num.strip():
-            st.error("⚠️ 차량 번호를 정확히 입력해주세요.")
+        if not car_num or not car_num.strip() or car_num == "차량 없음":
+            st.error("⚠️ 차량 번호를 정확히 선택해주세요.")
         elif len(st.session_state["temp_photos"]) > 10:
             st.error("⚠️ 사진 개수를 10장 이하로 줄여주세요.")
         else:
+            # 현재 폼의 불량/정상 개수 집계
+            current_ok, current_ng = 0, 0
+            for cat, items in CHECK_ITEMS.items():
+                for it in items:
+                    if st.session_state.get(it["id"], "정상") == "정상": current_ok += 1
+                    else: current_ng += 1
+            current_total = current_ok + current_ng
+
             saved_image_paths = []
             for fid, pdata in st.session_state["temp_photos"].items():
                 ext = pdata["name"].split(".")[-1] if "." in pdata["name"] else "jpg"
@@ -255,9 +262,9 @@ if page == "📋 현장 점검 입력":
                 "branch": branch,
                 "zone_num": zone_num,
                 "mileage": mileage,
-                "total_count": total_count,
-                "ok_count": ok_count,
-                "ng_count": ng_count,
+                "total_count": current_total,
+                "ok_count": current_ok,
+                "ng_count": current_ng,
                 "memo": memo,
                 "images": saved_image_paths
             }
