@@ -5,6 +5,11 @@
     font-family: 'Pretendard', sans-serif !important;
 }
 
+/* Fix Streamlit Material Icons */
+.material-symbols-rounded, .material-icons {
+    font-family: 'Material Symbols Rounded', 'Material Icons' !important;
+}
+
 /* Hide Streamlit Defaults */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
@@ -84,8 +89,7 @@ h1, h2, h3, h4, p, label, .stMarkdown {
     border-bottom: none;
 }
 
-/* Submit Button */
-[data-testid="baseButton-secondary"],
+/* Submit Button (Primary Only) */
 [data-testid="baseButton-primary"] {
     background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
     color: white !important;
@@ -99,7 +103,6 @@ h1, h2, h3, h4, p, label, .stMarkdown {
     box-shadow: 0 4px 15px rgba(26, 35, 126, 0.4);
 }
 
-[data-testid="baseButton-secondary"]:hover,
 [data-testid="baseButton-primary"]:hover {
     background: linear-gradient(135deg, #303f9f 0%, #3949ab 100%);
     box-shadow: 0 6px 20px rgba(26, 35, 126, 0.6);
@@ -176,20 +179,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     border-color: #cbd5e0;
 }
 
-/* Compact Delete Button for Photos */
-.photo-delete-btn button {
-    background-color: #ef4444 !important;
-    color: white !important;
-    border-radius: 20px !important;
-    padding: 2px 8px !important;
-    font-size: 0.8rem !important;
-    border: none !important;
-    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4) !important;
-    min-height: 0 !important;
-}
-.photo-delete-btn button:hover {
-    background-color: #dc2626 !important;
-}
+
 
 /* NavBar Customization (To simulate mobile nav) */
 .nav-bar-custom {

@@ -223,10 +223,8 @@ if page == "📋 현장 점검 입력":
             for idx, (fid, pdata) in enumerate(st.session_state["temp_photos"].items()):
                 with p_cols[idx % 5]:
                     st.image(pdata["bytes"], use_container_width=True)
-                    st.markdown("<div class='photo-delete-btn'>", unsafe_allow_html=True)
                     if st.button("❌ 삭제", key=f"del_{fid}", use_container_width=True):
                         keys_to_delete.append(fid)
-                    st.markdown("</div>", unsafe_allow_html=True)
             
             if keys_to_delete:
                 for k in keys_to_delete:
