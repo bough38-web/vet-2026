@@ -281,7 +281,7 @@ elif page == "📊 관리자 대시보드":
                 st.error("비밀번호가 일치하지 않습니다.")
     else:
         st.markdown("<div style='text-align: right;'><small>✅ 관리자 인증 완료</small></div>", unsafe_allow_html=True)
-        if st.button("로그아웃", size="small"):
+        if st.button("로그아웃"):
             st.session_state["admin_auth"] = False
             st.rerun()
             
