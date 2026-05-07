@@ -69,11 +69,16 @@ def show_inspection_details(item_title, item_detail):
     if st.button("확인 완료 (닫기)", type="primary"):
         st.rerun()
 
-def get_vehicle_db():
+def get_vehicle_db_df():
     db_path = os.path.join(DB_DIR, "vehicles.csv")
     if os.path.exists(db_path):
-        return pd.read_csv(db_path)["차량번호"].tolist()
-    return []
+        df = pd.read_csv(db_path)
+        # 하위 호환성을 위해 컬럼 확인
+        for col in ["지사", "차량번호", "구역번호"]:
+            if col not in df.columns:
+                df[col] = ""
+        return df
+    return pd.DataFrame(columns=["지사", "차량번호", "구역번호"])
 
 def load_all_inspections():
     data = []
@@ -135,16 +140,27 @@ if page == "📋 현장 점검 입력":
 
     with st.container(border=True):
         st.markdown("### 📋 현장 기본 정보")
-        c1, c2 = st.columns([2, 1])
+        c1, c2, c3 = st.columns(3)
+        df_db = get_vehicle_db_df()
+        
         with c1:
-            vehicle_list = get_vehicle_db()
-            if not vehicle_list:
-                st.warning("⚠️ 등록된 차량이 없습니다. 관리자 탭에서 먼저 차량을 등록해주세요.")
-                car_num = None
-            else:
-                car_num = st.selectbox("차량 번호 선택", options=vehicle_list)
-        with c2:
             branch = st.selectbox("방문 지사", options=BRANCHES)
+        with c2:
+            if not df_db.empty:
+                filtered_df = df_db[df_db["지사"] == branch]
+                if filtered_df.empty:
+                    car_num = st.selectbox("차량 번호 선택", options=["차량 없음"])
+                    zone_num = ""
+                else:
+                    car_num = st.selectbox("차량 번호 선택", options=filtered_df["차량번호"].tolist())
+                    zone_num = filtered_df[filtered_df["차량번호"] == car_num]["구역번호"].values[0]
+            else:
+                st.warning("⚠️ 차량 DB가 비어있습니다.")
+                car_num = None
+                zone_num = ""
+        with c3:
+            st.text_input("구역 번호", value=zone_num, disabled=True)
+            
         mileage = st.number_input("누적 주행거리 (km)", value=0, step=1)
 
     # 5.2 Responsive Grid Checklist (2단 배치)
@@ -239,6 +255,7 @@ if page == "📋 현장 점검 입력":
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "car_num": car_num,
                 "branch": branch,
+                "zone_num": zone_num,
                 "mileage": mileage,
                 "total_count": total_count,
                 "ok_count": ok_count,
@@ -292,32 +309,32 @@ elif page == "📊 관리자 대시보드":
             c1, c2 = st.columns(2)
             with c1:
                 st.markdown("#### 단일 차량 등록")
+                new_branch = st.selectbox("지사 선택", options=BRANCHES, key="new_branch")
                 new_car = st.text_input("새로운 차량 번호 입력 (예: 123가4567)")
+                new_zone = st.text_input("구역 번호 입력 (예: G0001234)")
                 if st.button("추가하기"):
-                    if new_car:
-                        db_path = os.path.join(DB_DIR, "vehicles.csv")
-                        if os.path.exists(db_path):
-                            df_db = pd.read_csv(db_path)
-                            if new_car not in df_db["차량번호"].values:
-                                df_db.loc[len(df_db)] = [new_car]
-                                df_db.to_csv(db_path, index=False)
-                                st.success(f"✅ {new_car} 차량이 추가되었습니다.")
-                            else:
-                                st.warning("이미 존재하는 차량입니다.")
-                        else:
-                            pd.DataFrame({"차량번호": [new_car]}).to_csv(db_path, index=False)
+                    if new_car and new_zone:
+                        df_db = get_vehicle_db_df()
+                        if new_car not in df_db["차량번호"].values:
+                            df_db.loc[len(df_db)] = [new_branch, new_car, new_zone]
+                            df_db.to_csv(os.path.join(DB_DIR, "vehicles.csv"), index=False)
                             st.success(f"✅ {new_car} 차량이 추가되었습니다.")
+                        else:
+                            st.warning("이미 존재하는 차량입니다.")
+                    else:
+                        st.warning("차량 번호와 구역 번호를 모두 입력해주세요.")
             with c2:
                 st.markdown("#### 엑셀/CSV 일괄 업로드")
-                db_file = st.file_uploader("단일 '차량번호' 컬럼을 가진 파일 선택", type=['csv', 'xlsx'])
+                db_file = st.file_uploader("'지사', '차량번호', '구역번호' 컬럼을 가진 파일 선택", type=['csv', 'xlsx'])
                 if db_file:
                     try:
                         df_db = pd.read_csv(db_file) if db_file.name.endswith('.csv') else pd.read_excel(db_file)
-                        if "차량번호" in df_db.columns:
-                            df_db[["차량번호"]].to_csv(os.path.join(DB_DIR, "vehicles.csv"), index=False)
+                        req_cols = ["지사", "차량번호", "구역번호"]
+                        if all(col in df_db.columns for col in req_cols):
+                            df_db[req_cols].to_csv(os.path.join(DB_DIR, "vehicles.csv"), index=False)
                             st.success(f"✅ 차량 DB가 업데이트 되었습니다. (총 {len(df_db)}대)")
                         else:
-                            st.error("파일에 '차량번호' 컬럼이 없습니다.")
+                            st.error(f"파일에 필수 컬럼({', '.join(req_cols)})이 모두 포함되어야 합니다.")
                     except Exception as e:
                         st.error(f"오류 발생: {e}")
                         
@@ -329,7 +346,7 @@ elif page == "📊 관리자 대시보드":
         else:
             df = pd.DataFrame(inspections)
             df["삭제 선택"] = False
-            cols_to_show = ["삭제 선택", "timestamp", "branch", "car_num", "ng_count", "memo", "_filename", "images"]
+            cols_to_show = ["삭제 선택", "timestamp", "branch", "car_num", "zone_num", "ng_count", "memo", "_filename", "images"]
             
             # 하위 호환성 (과거 V2 데이터에 images 컬럼이 없을 경우)
             for col in cols_to_show:
@@ -378,7 +395,7 @@ elif page == "📊 관리자 대시보드":
                     ws = wb.active
                     ws.title = "점검 보고서"
                     
-                    headers = ["점검일시", "지사", "차량번호", "불량건수", "특이사항"]
+                    headers = ["점검일시", "지사", "차량번호", "구역번호", "불량건수", "특이사항"]
                     for cat, items in CHECK_ITEMS.items():
                         for it in items:
                             headers.append(it["title"])
@@ -406,6 +423,7 @@ elif page == "📊 관리자 대시보드":
                             row_data.get("timestamp", ""),
                             row_data.get("branch", ""),
                             row_data.get("car_num", ""),
+                            row_data.get("zone_num", ""),
                             row_data.get("ng_count", 0),
                             row_data.get("memo", "")
                         ]
