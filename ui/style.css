@@ -1,0 +1,191 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+/* Base Font & Theme */
+* {
+    font-family: 'Pretendard', sans-serif !important;
+}
+
+/* Hide Streamlit Defaults */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Background & Main Container */
+.stApp {
+    background-color: #f4f7f9;
+}
+
+/* Typography Colors */
+h1, h2, h3, h4, p, label, .stMarkdown {
+    color: #0f172a !important;
+}
+
+/* Dashboard Metric Cards */
+[data-testid="stMetric"] {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    padding: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    text-align: center;
+}
+
+[data-testid="stMetricLabel"] {
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    color: #64748b !important;
+    justify-content: center;
+}
+
+[data-testid="stMetricValue"] {
+    font-size: 1.8rem !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+}
+
+/* Specific Metric Colors (using CSS index targeting or we handle via st.metric delta) */
+
+/* General Cards (Expander / Container) */
+.st-emotion-cache-1wmy9hl, .st-emotion-cache-1jicfl2 {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid #edf2f7;
+    margin-bottom: 1rem;
+}
+
+/* Form Inputs */
+.stTextInput>div>div>input,
+.stNumberInput>div>div>input,
+.stSelectbox>div>div>div {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 10px 14px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.stTextInput>div>div>input:focus,
+.stNumberInput>div>div>input:focus,
+.stSelectbox>div>div>div:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Custom Check Rows Container */
+.check-row-container {
+    padding: 12px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.check-row-container:last-child {
+    border-bottom: none;
+}
+
+/* Submit Button */
+[data-testid="baseButton-secondary"],
+[data-testid="baseButton-primary"] {
+    background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
+    color: white !important;
+    border: none;
+    border-radius: 16px;
+    padding: 1rem;
+    font-size: 1.15rem !important;
+    font-weight: 800 !important;
+    width: 100%;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(26, 35, 126, 0.4);
+}
+
+[data-testid="baseButton-secondary"]:hover,
+[data-testid="baseButton-primary"]:hover {
+    background: linear-gradient(135deg, #303f9f 0%, #3949ab 100%);
+    box-shadow: 0 6px 20px rgba(26, 35, 126, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Radio Buttons (Segmented look) */
+div.row-widget.stRadio > div {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    background: #e2e8f0;
+    padding: 6px;
+    border-radius: 16px;
+    width: 100%;
+}
+div.row-widget.stRadio > div > label {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    border-radius: 12px;
+    padding: 12px 0;
+    margin: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Radio button text style */
+div.row-widget.stRadio > div > label > div:nth-child(2) {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #64748b;
+}
+
+/* Hide actual radio circle */
+div.row-widget.stRadio > div > label > div:first-child {
+    display: none;
+}
+
+/* Selected state (we target the checked state using st-emotion-cache or aria-checked if possible, 
+   but Streamlit re-renders. A generic fallback is to style all, but Streamlit's checked state is tricky via raw CSS.
+   We will rely on Streamlit's native selected color for the text, and add a hover effect here. ) */
+div.row-widget.stRadio > div > label:hover {
+    background: rgba(255,255,255,0.5);
+}
+
+/* Make selected label background white (Streamlit applies aria-checked="true" to the input, but it's hard to select parent. 
+   We will use a simpler approach: the input is inside the label. 
+   Wait, Streamlit structure: label > div(circle), div(text). input is invisible elsewhere. 
+   Let's keep it simple and elegant. */
+
+
+/* File Uploader styling */
+[data-testid="stFileUploadDropzone"] {
+    border: 2px dashed #cbd5e0;
+    border-radius: 12px;
+    background: #f8fafc;
+    transition: all 0.3s ease;
+}
+[data-testid="stFileUploadDropzone"]:hover {
+    border-color: #2563eb;
+    background: #f1f5f9;
+}
+
+/* NavBar Customization (To simulate mobile nav) */
+.nav-bar-custom {
+    background: linear-gradient(135deg, #0f172a 0%, #1a237e 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 0 0 20px 20px;
+    margin-top: -60px; /* offset streamlit top padding */
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.nav-bar-custom h1 {
+    color: white !important;
+    font-size: 1.2rem;
+    margin: 0;
+    padding: 0;
+}
+.nav-bar-custom span {
+    font-size: 0.85rem;
+    color: #e2e8f0;
+}
