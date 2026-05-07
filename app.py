@@ -255,6 +255,12 @@ elif page == "📊 관리자 대시보드":
             df["삭제 선택"] = False
             cols_to_show = ["삭제 선택", "timestamp", "branch", "car_num", "ng_count", "memo", "_filename", "images"]
             
+            # V2 이하 과거 데이터 호환성을 위해 없는 컬럼 안전하게 추가
+            for col in cols_to_show:
+                if col not in df.columns:
+                    df[col] = None
+
+            
             st.markdown("### 🗑️ 점검 내역 관리 및 삭제")
             st.info("삭제할 항목을 체크한 뒤 아래 버튼을 누르면 영구 삭제됩니다. (관련된 사진 파일도 함께 삭제됩니다.)")
             
