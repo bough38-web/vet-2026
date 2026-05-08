@@ -82,8 +82,8 @@ def get_vehicle_db_df():
 
     if os.path.exists(db_path):
         df = pd.read_csv(db_path)
-        # 하위 호환성을 위해 컬럼 확인
-        df.columns = df.columns.str.strip()
+        # 하위 호환성을 위해 컬럼 확인 (BOM 및 공백 제거)
+        df.rename(columns=lambda x: x.replace('\ufeff', '').strip(), inplace=True)
         for col in ["지사", "차량번호", "구역번호"]:
             if col not in df.columns:
                 df[col] = ""
