@@ -209,9 +209,10 @@ if page == "📋 현장 점검 입력":
         mileage = st.number_input("누적 주행거리 (km)", value=0, step=1)
 
     # 5.2 Responsive Table Checklist
-    for category, items in CHECK_ITEMS.items():
-        st.markdown(f"<div class='section-title'>{category}</div>", unsafe_allow_html=True)
-        with st.container(border=True):
+    for idx_cat, (category, items) in enumerate(CHECK_ITEMS.items()):
+        # 첫 번째 카테고리만 기본으로 펼쳐두기
+        is_expanded = (idx_cat == 0)
+        with st.expander(f"📋 {category}", expanded=is_expanded):
             # Header
             h_col1, h_col2, h_col3 = st.columns([2, 1.5, 2])
             h_col1.markdown("<div style='color: #64748b; font-size: 0.9rem; font-weight: 700; padding-bottom: 5px;'>점검 항목</div>", unsafe_allow_html=True)

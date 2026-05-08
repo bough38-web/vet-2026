@@ -159,23 +159,24 @@ div.row-widget.stRadio > div > label:has(input:checked) > div:nth-child(2) {
     color: white !important;
 }
 
-/* Section Title Styling */
-.section-title { 
+/* Expander Title Styling to replace section-title */
+[data-testid="stExpander"] summary {
     font-size: 1.15rem; 
     font-weight: 800; 
     color: #2563eb; 
-    margin-top: 15px;
-    margin-bottom: 5px; 
-    display: flex; 
-    align-items: center; 
+    background-color: #f8fafc;
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-bottom: 5px;
 }
-.section-title::before { 
-    content: ''; 
-    width: 6px; 
-    height: 20px; 
-    background: #2563eb; 
-    margin-right: 10px; 
-    border-radius: 3px; 
+[data-testid="stExpander"] summary:hover {
+    color: #1d4ed8;
+    background-color: #f1f5f9;
+}
+[data-testid="stExpander"] summary p {
+    font-size: 1.15rem; 
+    font-weight: 800; 
+    color: #2563eb; 
 }
 
 /* Progress bar customization */
