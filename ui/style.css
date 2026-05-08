@@ -2,7 +2,7 @@
 
 /* Base Font & Theme */
 * {
-    font-family: 'Pretendard', sans-serif !important;
+    font-family: 'Pretendard', sans-serif;
 }
 
 /* Fix Streamlit Material Icons */
@@ -161,22 +161,23 @@ div.row-widget.stRadio > div > label:has(input:checked) > div:nth-child(2) {
 
 /* Expander Title Styling to replace section-title */
 [data-testid="stExpander"] summary {
-    font-size: 1.15rem; 
-    font-weight: 800; 
-    color: #2563eb; 
     background-color: #f8fafc;
     border-radius: 8px;
-    padding: 10px 15px;
     margin-bottom: 5px;
 }
 [data-testid="stExpander"] summary:hover {
-    color: #1d4ed8;
     background-color: #f1f5f9;
 }
 [data-testid="stExpander"] summary p {
-    font-size: 1.15rem; 
-    font-weight: 800; 
-    color: #2563eb; 
+    font-size: 1.15rem !important; 
+    font-weight: 800 !important; 
+    color: #2563eb !important; 
+}
+/* Fix icon font explicitly inside expander just in case */
+[data-testid="stExpander"] summary [class*="icon"],
+[data-testid="stExpander"] summary [class*="Icon"] {
+    font-family: 'Material Symbols Rounded', 'Material Icons' !important;
+    color: #2563eb !important;
 }
 
 /* Progress bar customization */
