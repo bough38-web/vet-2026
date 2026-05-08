@@ -71,12 +71,23 @@ def show_inspection_details(item_title, item_detail):
 
 def get_vehicle_db_df():
     db_path = os.path.join(DB_DIR, "vehicles.csv")
+    
+    # 클라우드 배포 환경(Streamlit Cloud 등)에서 DB 파일이 없는 경우,
+    # 프로젝트 내부에 번들링된 초기 DB 파일(vehicles_init.csv)로 자동 초기화합니다.
+    if not os.path.exists(db_path):
+        init_db_path = os.path.join(os.path.dirname(__file__), "vehicles_init.csv")
+        if os.path.exists(init_db_path):
+            import shutil
+            shutil.copy(init_db_path, db_path)
+
     if os.path.exists(db_path):
         df = pd.read_csv(db_path)
         # 하위 호환성을 위해 컬럼 확인
+        df.columns = df.columns.str.strip()
         for col in ["지사", "차량번호", "구역번호"]:
             if col not in df.columns:
                 df[col] = ""
+        df["지사"] = df["지사"].astype(str).str.strip()
         return df
     return pd.DataFrame(columns=["지사", "차량번호", "구역번호"])
 
