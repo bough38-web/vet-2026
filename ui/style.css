@@ -109,14 +109,14 @@ h1, h2, h3, h4, p, label, .stMarkdown {
     transform: translateY(-2px);
 }
 
-/* Radio Buttons (Segmented look) */
+/* Radio Buttons (Segmented look mimicking HTML pills) */
 div.row-widget.stRadio > div {
     display: flex;
     flex-direction: row;
     gap: 8px;
-    background: #e2e8f0;
-    padding: 6px;
-    border-radius: 16px;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
     width: 100%;
 }
 div.row-widget.stRadio > div > label {
@@ -124,19 +124,21 @@ div.row-widget.stRadio > div > label {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: transparent;
-    border-radius: 12px;
-    padding: 12px 0;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    padding: 6px 0;
     margin: 0;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 /* Radio button text style */
 div.row-widget.stRadio > div > label > div:nth-child(2) {
-    font-weight: 700;
-    font-size: 1rem;
+    font-weight: 600;
+    font-size: 0.85rem;
     color: #64748b;
+    margin: 0;
 }
 
 /* Hide actual radio circle */
@@ -144,17 +146,42 @@ div.row-widget.stRadio > div > label > div:first-child {
     display: none;
 }
 
-/* Selected state (we target the checked state using st-emotion-cache or aria-checked if possible, 
-   but Streamlit re-renders. A generic fallback is to style all, but Streamlit's checked state is tricky via raw CSS.
-   We will rely on Streamlit's native selected color for the text, and add a hover effect here. ) */
 div.row-widget.stRadio > div > label:hover {
-    background: rgba(255,255,255,0.5);
+    background: #f8fafc;
 }
 
-/* Make selected label background white (Streamlit applies aria-checked="true" to the input, but it's hard to select parent. 
-   We will use a simpler approach: the input is inside the label. 
-   Wait, Streamlit structure: label > div(circle), div(text). input is invisible elsewhere. 
-   Let's keep it simple and elegant. */
+/* Checked States per item (양호, 주의, 불량) */
+div.row-widget.stRadio > div > label:nth-child(1):has(input:checked) { background: #059669; border-color: #059669; }
+div.row-widget.stRadio > div > label:nth-child(2):has(input:checked) { background: #d97706; border-color: #d97706; }
+div.row-widget.stRadio > div > label:nth-child(3):has(input:checked) { background: #dc2626; border-color: #dc2626; }
+
+div.row-widget.stRadio > div > label:has(input:checked) > div:nth-child(2) {
+    color: white !important;
+}
+
+/* Section Title Styling */
+.section-title { 
+    font-size: 1.15rem; 
+    font-weight: 800; 
+    color: #2563eb; 
+    margin-top: 15px;
+    margin-bottom: 5px; 
+    display: flex; 
+    align-items: center; 
+}
+.section-title::before { 
+    content: ''; 
+    width: 6px; 
+    height: 20px; 
+    background: #2563eb; 
+    margin-right: 10px; 
+    border-radius: 3px; 
+}
+
+/* Progress bar customization */
+[data-testid="stProgressBar"] > div > div {
+    background-color: #2563eb;
+}
 
 
 /* File Uploader styling */

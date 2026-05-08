@@ -34,15 +34,33 @@ os.makedirs(IMAGE_DIR, exist_ok=True)
 BRANCHES = ["중앙", "강북", "서대문", "고양", "의정부", "남양주", "강릉", "원주"]
 
 CHECK_ITEMS = {
-    "기동 차량 점검": [
-        {"id": "c1", "title": "차량외부: 파손(도장) 및 Ci/BI상태 등", "desc": "외관 스크래치, 파손, 랩핑 상태 확인", "detail": "1. 차량 전/후/좌/우 파손 여부\n2. 회사 로고(Ci/BI) 랩핑 상태"},
-        {"id": "c2", "title": "경광등 및 사이렌 작동", "desc": "점등 및 출력 소음 상태 확인", "detail": "1. 전체 LED 정상 점등 확인\n2. 사이렌 출력 테스트"},
-        {"id": "c3", "title": "블랙박스 녹화 상태", "desc": "SD카드 인식 및 각도 확인", "detail": "1. 블랙박스 전원 및 녹화 점등\n2. SD 카드 인식 확인"}
+    "1. 엔진 및 구동 시스템": [
+        {"id": "eng_1", "title": "엔진오일 누유 및 잔량"},
+        {"id": "eng_2", "title": "냉각수 및 라디에이터"},
+        {"id": "eng_3", "title": "팬벨트 및 풀리 상태"},
+        {"id": "eng_4", "title": "에어크리너 오염도"},
+        {"id": "eng_5", "title": "배터리 전압 및 단자"}
     ],
-    "경비 장구류 및 옵션": [
-        {"id": "e1", "title": "가스총(가스발사총)", "desc": "약제 유효기간 및 트리거 확인", "detail": "1. 내부 약제통 유효기간 점검\n2. 방아쇠 등 안전장치 파손 여부"},
-        {"id": "e2", "title": "휴대용 무전기(TRS)", "desc": "채널 고정 및 안테나 파손 여부", "detail": "1. 지정된 보안 채널 확인\n2. 안테나 및 배터리 점검"},
-        {"id": "e3", "title": "비상 구급함/소화기", "desc": "비치 품목 및 압력 확인", "detail": "1. 소화기 게이지 녹색(정상) 구간 확인\n2. 구급함 내 약품 유통기한 확인"}
+    "2. 전·후축 및 제동 장치": [
+        {"id": "axle_1", "title": "타이어 마모 및 공기압"},
+        {"id": "axle_2", "title": "브레이크 라이닝/패드"},
+        {"id": "axle_3", "title": "차축 베어링 및 구리스"},
+        {"id": "axle_4", "title": "서스펜션/쇼바 상태"},
+        {"id": "axle_5", "title": "조향 링크 및 유격"}
+    ],
+    "3. 유압 및 실린더 시스템": [
+        {"id": "hydro_1", "title": "유압유 누유 및 잔량"},
+        {"id": "hydro_2", "title": "컨트롤 밸브 작동"},
+        {"id": "hydro_3", "title": "유압 호스 손상 여부"},
+        {"id": "hydro_4", "title": "실린더 로드 부식/누유"},
+        {"id": "hydro_5", "title": "작업 장치 핀 유격"}
+    ],
+    "4. 전기장치 및 안전": [
+        {"id": "elec_1", "title": "계기판 경고등 및 게이지"},
+        {"id": "elec_2", "title": "전·후방 등화 장치"},
+        {"id": "elec_3", "title": "후진 알람 및 경음기"},
+        {"id": "elec_4", "title": "와이퍼 및 워셔액"},
+        {"id": "elec_5", "title": "소화기 및 안전장구"}
     ]
 }
 
@@ -132,20 +150,31 @@ if page == "📋 현장 점검 입력":
     for category, items in CHECK_ITEMS.items():
         for item in items:
             if item["id"] not in st.session_state:
-                st.session_state[item["id"]] = "정상"
+                st.session_state[item["id"]] = None
+            if f"memo_{item['id']}" not in st.session_state:
+                st.session_state[f"memo_{item['id']}"] = ""
 
     today_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-    st.markdown(f"<div class='nav-bar-custom'><h1>현장 점검 시스템 (본부 지사 통합)</h1><span>{today_str}</span></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='nav-bar-custom'><h1>장비 종합 정밀 점검 시스템</h1><span>{today_str}</span></div>", unsafe_allow_html=True)
 
     # 전역 대시보드 지표 (전체 누적 데이터 기반)
     inspections = load_all_inspections()
     total_vehicles = len(inspections)
-    ng_vehicles = sum(1 for d in inspections if d.get("ng_count", 0) > 0)
+    ng_vehicles = sum(1 for d in inspections if d.get("ng_count", 0) > 0 or d.get("warn_count", 0) > 0)
     ok_vehicles = total_vehicles - ng_vehicles
+
+    # 진행률 표시
+    total_items = sum(len(items) for items in CHECK_ITEMS.values())
+    checked_items = sum(1 for cat, items in CHECK_ITEMS.items() for item in items if st.session_state.get(item["id"]) is not None)
+    progress_percent = int((checked_items / total_items) * 100) if total_items > 0 else 0
+
+    st.markdown(f"<div style='font-size: 0.95rem; margin-top: 10px; margin-bottom: 5px; font-weight: 700; color: #64748b;'>점검 진행률: <span style='color: #2563eb;'>{progress_percent}%</span> ({checked_items}/{total_items})</div>", unsafe_allow_html=True)
+    st.progress(progress_percent / 100)
+    st.markdown("<br>", unsafe_allow_html=True)
 
     m1, m2, m3 = st.columns(3)
     m1.metric("총 점검 완료 차량", f"{total_vehicles}대")
-    m2.metric("정비 필요 (불량)", f"{ng_vehicles}대", f"-조치 요망" if ng_vehicles > 0 else None, delta_color="inverse")
+    m2.metric("주의 및 정비 필요", f"{ng_vehicles}대", f"-조치 요망" if ng_vehicles > 0 else None, delta_color="inverse")
     m3.metric("상태 양호", f"{ok_vehicles}대", "전원 양호" if ok_vehicles == total_vehicles and total_vehicles > 0 else None)
 
     with st.container(border=True):
@@ -173,21 +202,28 @@ if page == "📋 현장 점검 입력":
             
         mileage = st.number_input("누적 주행거리 (km)", value=0, step=1)
 
-    # 5.2 Responsive Grid Checklist (2단 배치)
+    # 5.2 Responsive Table Checklist
     for category, items in CHECK_ITEMS.items():
-        st.markdown(f"### 🛠️ {category}")
-        grid_cols = st.columns(2) # 2단 배치
-        for idx, item in enumerate(items):
-            with grid_cols[idx % 2]:
-                with st.container(border=True):
-                    col_text, col_btn = st.columns([3, 1])
-                    with col_text:
-                        st.markdown(f"<div class='check-row-container'><div style='font-weight:700; font-size:1.1rem;'>{item['title']}</div><div style='font-size:0.9rem; color:#64748b;'>{item['desc']}</div></div>", unsafe_allow_html=True)
-                    with col_btn:
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        if st.button("🔍 상세점검내역", key=f"btn_{item['id']}", use_container_width=True):
-                            show_inspection_details(item["title"], item["detail"])
-                    st.radio("상태", ["정상", "불량"], key=item["id"], horizontal=True, label_visibility="collapsed")
+        st.markdown(f"<div class='section-title'>{category}</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            # Header
+            h_col1, h_col2, h_col3 = st.columns([2, 1.5, 2])
+            h_col1.markdown("<div style='color: #64748b; font-size: 0.9rem; font-weight: 700; padding-bottom: 5px;'>점검 항목</div>", unsafe_allow_html=True)
+            h_col2.markdown("<div style='color: #64748b; font-size: 0.9rem; font-weight: 700; padding-bottom: 5px;'>상태</div>", unsafe_allow_html=True)
+            h_col3.markdown("<div style='color: #64748b; font-size: 0.9rem; font-weight: 700; padding-bottom: 5px;'>비고</div>", unsafe_allow_html=True)
+            st.divider()
+
+            for idx, item in enumerate(items):
+                i_col1, i_col2, i_col3 = st.columns([2, 1.5, 2])
+                with i_col1:
+                    st.markdown(f"<div style='padding-top: 15px; font-weight: 600; color: #1e293b;'>{item['title']}</div>", unsafe_allow_html=True)
+                with i_col2:
+                    st.radio("상태", ["양호", "주의", "불량"], key=item["id"], horizontal=True, label_visibility="collapsed", index=None)
+                with i_col3:
+                    st.text_input("비고", key=f"memo_{item['id']}", placeholder="이상 내용 입력", label_visibility="collapsed")
+                
+                if idx < len(items) - 1:
+                    st.markdown("<hr style='margin: 0px; opacity: 0.3;'>", unsafe_allow_html=True)
 
     # 5.3 Photo Capture & Temp Storage
     with st.container(border=True):
@@ -248,18 +284,21 @@ if page == "📋 현장 점검 입력":
     # 5.4 Submit
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 점검 완료 및 데이터 전송", use_container_width=True, type="primary"):
-        if not car_num or not car_num.strip() or car_num == "차량 없음":
+        if checked_items < total_items:
+            st.error("⚠️ 미점검 항목이 있습니다. 모든 항목을 점검해주세요.")
+        elif not car_num or not car_num.strip() or car_num == "차량 없음":
             st.error("⚠️ 차량 번호를 정확히 선택해주세요.")
         elif len(st.session_state["temp_photos"]) > 10:
             st.error("⚠️ 사진 개수를 10장 이하로 줄여주세요.")
         else:
-            # 현재 폼의 불량/정상 개수 집계
-            current_ok, current_ng = 0, 0
+            current_ok, current_warn, current_ng = 0, 0, 0
             for cat, items in CHECK_ITEMS.items():
                 for it in items:
-                    if st.session_state.get(it["id"], "정상") == "정상": current_ok += 1
-                    else: current_ng += 1
-            current_total = current_ok + current_ng
+                    val = st.session_state.get(it["id"])
+                    if val == "양호": current_ok += 1
+                    elif val == "주의": current_warn += 1
+                    elif val == "불량": current_ng += 1
+            current_total = current_ok + current_warn + current_ng
 
             saved_image_paths = []
             for fid, pdata in st.session_state["temp_photos"].items():
@@ -275,6 +314,7 @@ if page == "📋 현장 점검 입력":
                 "mileage": mileage,
                 "total_count": current_total,
                 "ok_count": current_ok,
+                "warn_count": current_warn,
                 "ng_count": current_ng,
                 "memo": memo,
                 "images": saved_image_paths
@@ -283,6 +323,7 @@ if page == "📋 현장 점검 입력":
             for cat, items in CHECK_ITEMS.items():
                 for item in items:
                     report_data[item["title"]] = st.session_state[item["id"]]
+                    report_data[f"memo_{item['title']}"] = st.session_state[f"memo_{item['id']}"]
             
             save_path = os.path.join(DATA_DIR, f"report_{car_num}_{datetime.now().strftime('%Y%m%d%H%M%S')}.json")
             with open(save_path, "w", encoding="utf-8") as f:
@@ -290,6 +331,10 @@ if page == "📋 현장 점검 입력":
                 
             # 제출 후 임시 상태 초기화
             st.session_state["temp_photos"].clear()
+            for cat, items in CHECK_ITEMS.items():
+                for item in items:
+                    st.session_state[item["id"]] = None
+                    st.session_state[f"memo_{item['id']}"] = ""
             
 
             st.success(f"✅ {car_num} 점검 데이터 및 사진({len(saved_image_paths)}장)이 성공적으로 최종 저장되었습니다!")
@@ -411,10 +456,11 @@ elif page == "📊 관리자 대시보드":
                     ws = wb.active
                     ws.title = "점검 보고서"
                     
-                    headers = ["점검일시", "지사", "차량번호", "구역번호", "불량건수", "특이사항"]
+                    headers = ["점검일시", "지사", "차량번호", "구역번호", "경고(주의)건수", "불량건수", "종합특이사항"]
                     for cat, items in CHECK_ITEMS.items():
                         for it in items:
-                            headers.append(it["title"])
+                            headers.append(it["title"] + " (상태)")
+                            headers.append(it["title"] + " (비고)")
                     
                     for i in range(1, 11):
                         headers.append(f"사진 {i}")
@@ -432,7 +478,7 @@ elif page == "📊 관리자 대시보드":
                         if "사진" in header:
                             ws.column_dimensions[get_column_letter(col_num)].width = 28
                         else:
-                            ws.column_dimensions[get_column_letter(col_num)].width = 15
+                            ws.column_dimensions[get_column_letter(col_num)].width = 18
 
                     for r_idx, row_data in enumerate(inspections, start=2):
                         base_data = [
@@ -440,12 +486,14 @@ elif page == "📊 관리자 대시보드":
                             row_data.get("branch", ""),
                             row_data.get("car_num", ""),
                             row_data.get("zone_num", ""),
+                            row_data.get("warn_count", 0),
                             row_data.get("ng_count", 0),
                             row_data.get("memo", "")
                         ]
                         for cat, items in CHECK_ITEMS.items():
                             for it in items:
-                                base_data.append(row_data.get(it["title"], "정상"))
+                                base_data.append(row_data.get(it["title"], "미점검"))
+                                base_data.append(row_data.get(f"memo_{it['title']}", ""))
                         
                         for c_idx, val in enumerate(base_data, start=1):
                             cell = ws.cell(row=r_idx, column=c_idx, value=val)
